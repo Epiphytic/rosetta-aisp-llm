@@ -29,7 +29,7 @@ pub use rosetta_aisp::{
 };
 
 /// Extended conversion options with LLM fallback support
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ConversionOptionsExt {
     /// Force specific tier (auto-detect if None)
     pub tier: Option<ConversionTier>,
@@ -39,8 +39,20 @@ pub struct ConversionOptionsExt {
     pub enable_llm_fallback: bool,
     /// LLM model to use (default: haiku)
     pub llm_model: Option<String>,
-    /// Use AISP symbolic prompt instead of English prompt
+    /// Use AISP symbolic prompt instead of English prompt (default: true)
     pub use_aisp_prompt: bool,
+}
+
+impl Default for ConversionOptionsExt {
+    fn default() -> Self {
+        Self {
+            tier: None,
+            confidence_threshold: None,
+            enable_llm_fallback: false,
+            llm_model: None,
+            use_aisp_prompt: true, // AISP prompt is default for accuracy
+        }
+    }
 }
 
 /// Convert prose to AISP with optional LLM fallback

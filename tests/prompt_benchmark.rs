@@ -17,12 +17,56 @@ use std::time::{Duration, Instant};
 const TEST_CASES: &[(&str, &[&str])] = &[
     // (input prose, expected symbols in output)
     ("Define x as 5", &["≜", "x", "5"]),
-    ("for all x in S, x equals y", &["∀", "∈", "="]),
-    ("if valid then proceed else reject", &["→", "¬"]),
-    ("there exists a user such that admin is true", &["∃"]),
+    ("for all x in S, x equals y", &["∀", "∈", "≡"]),
+    ("if valid then proceed else reject", &["→"]),
+    ("there exists a user such that admin is true", &["∃", "⊤"]),
     (
         "The quantum entanglement manifests probabilistic correlation",
         &["≈", "∝"], // May use approximate or proportional
+    ),
+];
+
+/// More challenging test cases for comprehensive benchmark
+const CHALLENGING_CASES: &[(&str, &[&str])] = &[
+    // Complex logical statements
+    (
+        "For all users u, if u is authenticated and u has permission p, then u can access resource r",
+        &["∀", "∧", "⇒", "∈"],
+    ),
+    // Dependent types
+    (
+        "Define a vector type parameterized by length n where n is a natural number",
+        &["Π", "ℕ", "≜", "Vec"],
+    ),
+    // Category theory
+    (
+        "The functor F preserves composition, meaning F of g composed with f equals F of g composed with F of f",
+        &["∘", "≡", "𝔽"],
+    ),
+    // Set theory with quantifiers
+    (
+        "There exists a unique element x in set S such that for all y in S, x is less than or equal to y",
+        &["∃!", "∀", "∈", "≤"],
+    ),
+    // Lambda calculus
+    (
+        "Define the Y combinator as a function that takes f and returns f applied to the Y combinator applied to f",
+        &["λ", "fix", "≜"],
+    ),
+    // Proof-carrying code
+    (
+        "The document is well-formed if and only if it has a valid header and at least two blocks",
+        &["↔", "∧", "wf", "≥"],
+    ),
+    // Type inference
+    (
+        "If expression e has type A implies B, and expression e2 has type A, then applying e to e2 has type B",
+        &["⊢", "→", ":"],
+    ),
+    // Error handling
+    (
+        "When ambiguity is detected greater than threshold 0.02, reject the input and request clarification",
+        &["Ambig", ">", "⇒", "reject"],
     ),
 ];
 
@@ -88,7 +132,7 @@ async fn run_benchmark(
     })
 }
 
-/// Run all benchmarks for a specific quadrant
+/// Run all benchmarks for a specific quadrant (basic cases)
 async fn run_quadrant(
     model: &str,
     use_aisp_prompt: bool,
@@ -96,6 +140,22 @@ async fn run_quadrant(
     let mut results = Vec::new();
 
     for (prose, expected) in TEST_CASES {
+        if let Some(result) = run_benchmark(prose, expected, model, use_aisp_prompt).await {
+            results.push(result);
+        }
+    }
+
+    results
+}
+
+/// Run challenging benchmarks for a specific quadrant
+async fn run_challenging_quadrant(
+    model: &str,
+    use_aisp_prompt: bool,
+) -> Vec<BenchmarkResult> {
+    let mut results = Vec::new();
+
+    for (prose, expected) in CHALLENGING_CASES {
         if let Some(result) = run_benchmark(prose, expected, model, use_aisp_prompt).await {
             results.push(result);
         }
@@ -306,4 +366,121 @@ async fn benchmark_sonnet_aisp() {
         println!("[{}ms] {}: {}", r.duration_ms, r.test_case, r.output);
     }
     print_quadrant_summary(&results);
+}
+
+#[tokio::test]
+async fn benchmark_challenging_all_quadrants() {
+    // Check if Claude CLI is available
+    let provider = ClaudeFallback::new();
+    if !provider.is_available().await {
+        eprintln!("Skipping challenging benchmark: Claude CLI not available");
+        return;
+    }
+
+    println!("\n=== CHALLENGING BENCHMARK: 4 QUADRANTS ===\n");
+
+    // Quadrant 1: haiku + english
+    println!("## Quadrant 1: haiku + english (challenging)");
+    let q1 = run_challenging_quadrant("haiku", false).await;
+    for r in &q1 {
+        println!(
+            "  [{}ms] {:.1}% acc | {}",
+            r.duration_ms,
+            r.accuracy * 100.0,
+            r.test_case
+        );
+    }
+    print_quadrant_summary(&q1);
+    println!();
+
+    // Quadrant 2: haiku + aisp
+    println!("## Quadrant 2: haiku + aisp (challenging)");
+    let q2 = run_challenging_quadrant("haiku", true).await;
+    for r in &q2 {
+        println!(
+            "  [{}ms] {:.1}% acc | {}",
+            r.duration_ms,
+            r.accuracy * 100.0,
+            r.test_case
+        );
+    }
+    print_quadrant_summary(&q2);
+    println!();
+
+    // Quadrant 3: sonnet + english
+    println!("## Quadrant 3: sonnet + english (challenging)");
+    let q3 = run_challenging_quadrant("sonnet", false).await;
+    for r in &q3 {
+        println!(
+            "  [{}ms] {:.1}% acc | {}",
+            r.duration_ms,
+            r.accuracy * 100.0,
+            r.test_case
+        );
+    }
+    print_quadrant_summary(&q3);
+    println!();
+
+    // Quadrant 4: sonnet + aisp
+    println!("## Quadrant 4: sonnet + aisp (challenging)");
+    let q4 = run_challenging_quadrant("sonnet", true).await;
+    for r in &q4 {
+        println!(
+            "  [{}ms] {:.1}% acc | {}",
+            r.duration_ms,
+            r.accuracy * 100.0,
+            r.test_case
+        );
+    }
+    print_quadrant_summary(&q4);
+    println!();
+
+    // Summary comparison
+    println!("=== CHALLENGING SUMMARY ===\n");
+
+    let summaries = [
+        ("haiku+english", &q1),
+        ("haiku+aisp", &q2),
+        ("sonnet+english", &q3),
+        ("sonnet+aisp", &q4),
+    ];
+
+    println!("| Quadrant        | Avg Time | Avg Accuracy | Total Time |");
+    println!("|-----------------|----------|--------------|------------|");
+
+    for (name, results) in &summaries {
+        if results.is_empty() {
+            continue;
+        }
+        let total_time: u128 = results.iter().map(|r| r.duration_ms).sum();
+        let avg_time = total_time / results.len() as u128;
+        let avg_accuracy: f64 =
+            results.iter().map(|r| r.accuracy).sum::<f64>() / results.len() as f64;
+
+        println!(
+            "| {:<15} | {:>6}ms | {:>10.1}% | {:>8}ms |",
+            name,
+            avg_time,
+            avg_accuracy * 100.0,
+            total_time
+        );
+    }
+
+    // Determine winner
+    println!("\n=== CHALLENGING RECOMMENDATION ===\n");
+
+    let best = summaries
+        .iter()
+        .filter(|(_, r)| !r.is_empty())
+        .max_by(|(_, a), (_, b)| {
+            let score_a = a.iter().map(|r| r.accuracy).sum::<f64>() / a.len() as f64 * 100.0
+                - (a.iter().map(|r| r.duration_ms).sum::<u128>() / a.len() as u128) as f64 * 0.01;
+            let score_b = b.iter().map(|r| r.accuracy).sum::<f64>() / b.len() as f64 * 100.0
+                - (b.iter().map(|r| r.duration_ms).sum::<u128>() / b.len() as u128) as f64 * 0.01;
+            score_a.partial_cmp(&score_b).unwrap()
+        });
+
+    if let Some((name, _)) = best {
+        println!("Best combination for challenging cases: {}", name);
+    }
 }
