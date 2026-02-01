@@ -6,6 +6,7 @@
 use crate::provider::{LlmProvider, LlmResult};
 use anyhow::Result;
 use async_trait::async_trait;
+use once_cell::sync::Lazy;
 use rosetta_aisp::{get_all_categories, symbol_to_prose, symbols_by_category, ConversionTier};
 
 /// Generate symbol reference grouped by category
@@ -25,10 +26,9 @@ fn symbol_ref_grouped() -> String {
     output
 }
 
-/// System prompt for AISP conversion
-fn system_prompt() -> String {
+/// Cached system prompt - generated once and reused
+static SYSTEM_PROMPT: Lazy<String> = Lazy::new(|| {
     let symbol_ref = symbol_ref_grouped();
-
     format!(
         r#"You are an AISP (AI Symbolic Programming) conversion specialist.
 
@@ -90,8 +90,14 @@ Complete AISP document with all blocks:
 2. Preserve semantic meaning precisely
 3. Use appropriate Unicode symbols from the reference
 4. For ambiguous phrases, choose the most logical interpretation
-5. Never hallucinate symbols not in the reference"#
+5. Never hallucinate symbols not in the reference"#,
+        symbol_ref = symbol_ref
     )
+});
+
+/// Get cached system prompt (avoids regeneration on each call)
+fn system_prompt() -> &'static str {
+    &SYSTEM_PROMPT
 }
 
 /// Create user prompt with context
@@ -137,10 +143,10 @@ impl Default for ClaudeFallback {
 }
 
 impl ClaudeFallback {
-    /// Create new Claude fallback with default model (sonnet)
+    /// Create new Claude fallback with default model (haiku for speed)
     pub fn new() -> Self {
         Self {
-            model: "sonnet".to_string(),
+            model: "haiku".to_string(),
         }
     }
 
@@ -176,17 +182,34 @@ impl LlmProvider for ClaudeFallback {
         unmapped: &[String],
         partial_output: Option<&str>,
     ) -> Result<LlmResult> {
-        use claude_agent_sdk_rs::{query, ClaudeAgentOptions, ContentBlock, Message, PermissionMode};
+        use claude_agent_sdk_rs::{
+            query, ClaudeAgentOptions, ContentBlock, McpServers, Message, PermissionMode,
+            SettingSource,
+        };
+        use std::collections::HashMap;
 
         let user_prompt = create_user_prompt(prose, tier, unmapped, partial_output);
 
-        // Configure minimal Claude instance
+        // Build extra args for minimal CLI invocation
+        let mut extra_args: HashMap<String, Option<String>> = HashMap::new();
+        extra_args.insert("no-chrome".to_string(), None);
+        extra_args.insert("no-session-persistence".to_string(), None);
+        extra_args.insert("disable-slash-commands".to_string(), None);
+        extra_args.insert("strict-mcp-config".to_string(), None);
+
+        // Configure minimal Claude instance - no plugins, no MCP, no settings
         let options = ClaudeAgentOptions::builder()
             .model(&self.model)
-            .system_prompt(system_prompt())
+            .system_prompt(system_prompt().to_string())
             .max_turns(1) // Single turn for conversion
             .permission_mode(PermissionMode::BypassPermissions)
             .tools(Vec::<String>::new()) // No tools needed
+            .mcp_servers(McpServers::Empty) // No MCP servers
+            .setting_sources(Vec::<SettingSource>::new()) // No filesystem settings
+            .plugins(Vec::new()) // No plugins
+            .skip_version_check(true) // Skip version check for speed
+            .fork_session(true) // Fresh session, no history loading
+            .extra_args(extra_args) // Minimal CLI flags
             .build();
 
         let messages = query(&user_prompt, Some(options)).await?;
