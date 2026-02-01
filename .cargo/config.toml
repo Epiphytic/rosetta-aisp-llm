@@ -1,0 +1,9 @@
+[alias]
+# Run the 4-quadrant LLM prompt benchmark
+benchmark = "test benchmark_all_quadrants --test prompt_benchmark -- --nocapture"
+
+# Run individual quadrant benchmarks
+benchmark-haiku-english = "test benchmark_haiku_english --test prompt_benchmark -- --nocapture"
+benchmark-haiku-aisp = "test benchmark_haiku_aisp --test prompt_benchmark -- --nocapture"
+benchmark-sonnet-english = "test benchmark_sonnet_english --test prompt_benchmark -- --nocapture"
+benchmark-sonnet-aisp = "test benchmark_sonnet_aisp --test prompt_benchmark -- --nocapture"
