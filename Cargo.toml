@@ -1,0 +1,33 @@
+[package]
+name = "rosetta-aisp-llm"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["epiphytic"]
+description = "LLM fallback for AISP conversion using Claude SDK - extends rosetta-aisp with AI-powered conversion"
+license = "MIT"
+repository = "https://github.com/epiphytic/rosetta-aisp-llm"
+documentation = "https://docs.rs/rosetta-aisp-llm"
+readme = "README.md"
+keywords = ["aisp", "llm", "claude", "conversion", "ai"]
+categories = ["text-processing", "development-tools"]
+
+[lib]
+name = "rosetta_aisp_llm"
+path = "src/lib.rs"
+
+[dependencies]
+# AISP conversion
+rosetta-aisp = { git = "https://github.com/epiphytic/rosetta-aisp.git" }
+
+# Claude SDK for LLM fallback
+claude-agent-sdk-rs = "0.6"
+
+# Async runtime
+async-trait = "0.1"
+
+# Error handling
+anyhow = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.49", features = ["full"] }
