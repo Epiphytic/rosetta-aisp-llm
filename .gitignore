@@ -21,3 +21,6 @@ Thumbs.db
 *.profraw
 *.profdata
 coverage/
+
+# Agent fork-join session files
+.fork-join/
