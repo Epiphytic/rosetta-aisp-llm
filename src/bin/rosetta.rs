@@ -16,7 +16,7 @@ use std::io::{self, Read};
 #[derive(Parser)]
 #[command(name = "rosetta")]
 #[command(author = "epiphytic")]
-#[command(version = "0.2.0")]
+#[command(version = "0.3.0")]
 #[command(about = "Convert natural language prose to AISP symbolic notation", long_about = None)]
 struct Cli {
     #[command(subcommand)]
