@@ -17,9 +17,8 @@ name = "rosetta_aisp_llm"
 path = "src/lib.rs"
 
 [dependencies]
-# AISP conversion (switch to crates.io version once published)
-rosetta-aisp = { git = "https://github.com/epiphytic/rosetta-aisp.git" }
-# rosetta-aisp = "0.1"
+# AISP conversion
+rosetta-aisp = "0.1"
 
 # Claude SDK for LLM fallback
 claude-agent-sdk-rs = "0.6"
