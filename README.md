@@ -2,6 +2,10 @@
 
 LLM-powered fallback for AISP conversion using Claude SDK.
 
+[![Crates.io](https://img.shields.io/crates/v/rosetta-aisp-llm.svg)](https://crates.io/crates/rosetta-aisp-llm)
+[![Documentation](https://docs.rs/rosetta-aisp-llm/badge.svg)](https://docs.rs/rosetta-aisp-llm)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Extends [rosetta-aisp](https://github.com/epiphytic/rosetta-aisp) with AI-powered conversion when deterministic Rosetta mappings have low confidence.
 
 ## Features
@@ -15,7 +19,7 @@ Extends [rosetta-aisp](https://github.com/epiphytic/rosetta-aisp) with AI-powere
 
 ```toml
 [dependencies]
-rosetta-aisp-llm = "0.1"
+rosetta-aisp-llm = "0.2"
 ```
 
 ## Usage
