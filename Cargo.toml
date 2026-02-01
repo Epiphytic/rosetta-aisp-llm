@@ -22,7 +22,7 @@ path = "src/bin/rosetta.rs"
 
 [dependencies]
 # AISP conversion
-rosetta-aisp = { path = "../rosetta-aisp" }
+rosetta-aisp = "0.2"
 
 # Claude SDK for LLM fallback
 claude-agent-sdk-rs = "0.6"
