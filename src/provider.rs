@@ -19,12 +19,14 @@ pub trait LlmProvider: Send + Sync {
     /// * `tier` - The target conversion tier
     /// * `unmapped` - Phrases that couldn't be mapped deterministically
     /// * `partial_output` - Optional partial conversion from deterministic pass
+    /// * `use_aisp_prompt` - Use minimalist AISP prompt instead of English
     async fn convert(
         &self,
         prose: &str,
         tier: ConversionTier,
         unmapped: &[String],
         partial_output: Option<&str>,
+        use_aisp_prompt: bool,
     ) -> Result<LlmResult>;
 
     /// Check if provider is available

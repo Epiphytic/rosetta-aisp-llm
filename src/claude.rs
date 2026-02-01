@@ -26,8 +26,8 @@ fn symbol_ref_grouped() -> String {
     output
 }
 
-/// Cached system prompt - generated once and reused
-static SYSTEM_PROMPT: Lazy<String> = Lazy::new(|| {
+/// Cached English system prompt - generated once and reused
+static ENGLISH_PROMPT: Lazy<String> = Lazy::new(|| {
     let symbol_ref = symbol_ref_grouped();
     format!(
         r#"You are an AISP (AI Symbolic Programming) conversion specialist.
@@ -95,9 +95,65 @@ Complete AISP document with all blocks:
     )
 });
 
-/// Get cached system prompt (avoids regeneration on each call)
-fn system_prompt() -> &'static str {
-    &SYSTEM_PROMPT
+/// Cached AISP symbolic system prompt - minimalist notation
+static AISP_PROMPT: Lazy<String> = Lazy::new(|| {
+    let symbol_ref = symbol_ref_compact();
+    format!(
+        r#"𝔸5.1≜AISP⊕Converter
+γ≔prose→symbol
+
+⟦Σ:Ref⟧{{
+{symbol_ref}
+}}
+
+⟦Γ:Tier⟧{{
+  minimal≜symbol_only
+  standard≜⟨𝔸5.1.[n]@[d];γ≔[n];⟦Λ⟧{{...}};⟦Ε⟧⟩
+  full≜⟨𝔸5.1.[n]@[d];γ≔[n];ρ≔⟨...⟩;⟦Ω⟧;⟦Σ⟧;⟦Γ⟧;⟦Λ⟧;⟦Ε⟧⟩
+}}
+
+⟦Λ:Ex⟧{{
+  "Define x as 5"→x≜5
+  "for all x in S"→∀x∈S
+  "if valid then proceed"→valid→proceed
+  "there exists user"→∃user
+}}
+
+⟦Γ:Rules⟧{{
+  ∀out:AISP_only∧¬explain
+  ∀sym:∈Ref∧¬hallucinate
+  semantic≜preserved
+}}"#,
+        symbol_ref = symbol_ref
+    )
+});
+
+/// Generate compact symbol reference for AISP prompt
+fn symbol_ref_compact() -> String {
+    let mut output = String::new();
+    let categories = get_all_categories();
+
+    for category in categories {
+        output.push_str(&format!("  {}≔{{", category));
+        let symbols = symbols_by_category(category);
+        let pairs: Vec<String> = symbols
+            .iter()
+            .filter_map(|s| symbol_to_prose(s).map(|p| format!("{}≈{}", p, s)))
+            .take(5) // Limit to 5 per category for brevity
+            .collect();
+        output.push_str(&pairs.join(";"));
+        output.push_str("}\n");
+    }
+    output
+}
+
+/// Get cached system prompt based on style
+fn system_prompt(use_aisp: bool) -> &'static str {
+    if use_aisp {
+        &AISP_PROMPT
+    } else {
+        &ENGLISH_PROMPT
+    }
 }
 
 /// Create user prompt with context
@@ -181,6 +237,7 @@ impl LlmProvider for ClaudeFallback {
         tier: ConversionTier,
         unmapped: &[String],
         partial_output: Option<&str>,
+        use_aisp_prompt: bool,
     ) -> Result<LlmResult> {
         use claude_agent_sdk_rs::{
             query, ClaudeAgentOptions, ContentBlock, McpServers, Message, PermissionMode,
@@ -200,7 +257,7 @@ impl LlmProvider for ClaudeFallback {
         // Configure minimal Claude instance - no plugins, no MCP, no settings
         let options = ClaudeAgentOptions::builder()
             .model(&self.model)
-            .system_prompt(system_prompt().to_string())
+            .system_prompt(system_prompt(use_aisp_prompt).to_string())
             .max_turns(1) // Single turn for conversion
             .permission_mode(PermissionMode::BypassPermissions)
             .tools(Vec::<String>::new()) // No tools needed
@@ -259,10 +316,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_system_prompt_generation() {
-        let prompt = system_prompt();
+    fn test_english_prompt_generation() {
+        let prompt = system_prompt(false);
         assert!(prompt.contains("AISP"));
         assert!(prompt.contains("Rosetta Stone"));
+    }
+
+    #[test]
+    fn test_aisp_prompt_generation() {
+        let prompt = system_prompt(true);
+        assert!(prompt.contains("𝔸5.1"));
+        assert!(prompt.contains("⟦Σ:Ref⟧"));
+        // Should be more compact than English prompt
+        assert!(prompt.len() < system_prompt(false).len());
     }
 
     #[test]

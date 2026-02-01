@@ -48,8 +48,12 @@ enum Commands {
         threshold: f64,
 
         /// LLM model to use (haiku, sonnet, opus)
-        #[arg(long, default_value = "sonnet")]
+        #[arg(long, default_value = "haiku")]
         model: String,
+
+        /// Use AISP symbolic prompt instead of English prompt
+        #[arg(long)]
+        aisp_prompt: bool,
     },
 
     /// Convert AISP notation back to prose
@@ -150,6 +154,7 @@ async fn main() {
             llm_fallback,
             threshold,
             model,
+            aisp_prompt,
         } => {
             let prose = read_input(input);
 
@@ -159,6 +164,7 @@ async fn main() {
                     confidence_threshold: Some(threshold),
                     enable_llm_fallback: true,
                     llm_model: Some(model),
+                    use_aisp_prompt: aisp_prompt,
                 };
                 convert_with_fallback(&prose, Some(options)).await
             } else {

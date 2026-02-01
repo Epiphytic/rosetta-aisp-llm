@@ -139,6 +139,7 @@ async fn test_tier_preserved_with_fallback() {
             enable_llm_fallback: true,
             confidence_threshold: Some(0.99), // Force fallback
             llm_model: Some("haiku".to_string()),
+            use_aisp_prompt: false,
         };
 
         let result = convert_with_fallback(prose, Some(options)).await;

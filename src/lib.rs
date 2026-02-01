@@ -37,8 +37,10 @@ pub struct ConversionOptionsExt {
     pub confidence_threshold: Option<f64>,
     /// Enable LLM fallback
     pub enable_llm_fallback: bool,
-    /// LLM model to use (default: sonnet)
+    /// LLM model to use (default: haiku)
     pub llm_model: Option<String>,
+    /// Use AISP symbolic prompt instead of English prompt
+    pub use_aisp_prompt: bool,
 }
 
 /// Convert prose to AISP with optional LLM fallback
@@ -80,7 +82,13 @@ pub async fn convert_with_fallback(
 
         if provider.is_available().await {
             if let Ok(llm_result) = provider
-                .convert(prose, result.tier, &result.unmapped, Some(&result.output))
+                .convert(
+                    prose,
+                    result.tier,
+                    &result.unmapped,
+                    Some(&result.output),
+                    opts.use_aisp_prompt,
+                )
                 .await
             {
                 return llm_result.to_conversion_result(result.tier, prose.len());
